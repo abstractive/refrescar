@@ -12,6 +12,7 @@ module Abstractive
       options[:root] ||= Dir.pwd
       @root = Array[options[:root]]
       @debug = options[:debug] || false
+      @announcing = options[:announcing] || false
       @reschedule = options[:reschedule] || false
       @on_reload = block
       @watcher = INotify::Notifier.new
@@ -67,7 +68,7 @@ module Abstractive
     def reload(file)
       begin
         load(file)
-        debug("Reloaded: #{file}") if @debug
+        console("Reloaded: #{file}") if @announcing
       rescue SyntaxError => ex
         exception(ex, "Code Reloading > Syntax error in #{file}")
       rescue LoadError => ex
