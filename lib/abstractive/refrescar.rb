@@ -12,27 +12,18 @@ module Abstractive
       options[:root] ||= Dir.pwd
       @root = Array[options[:root]]
       @debug = options[:debug] || false
+      @reschedule = options[:reschedule] || false
       @on_reload = block
       @watcher = INotify::Notifier.new
-      @root.each { |r|
-        Find.find( r ) { |e|
-          if !File.extname(e) == '.rb' and !File.directory? e
-            Find.prune
-          else
-            begin
-              if File.extname(e) == '.rb'
-                debug("Will reload: #{e}") if @debug
-                @watcher.watch(e, :modify) { async.reload(e) }
-              end
-            rescue
-            end
-          end
-        }
-      }
+      @events = [
+        :close_write,
+        #de :modify  #de This seems to fire twice in certain cases.
+      ]
       async.reloading
     end
 
     def reloading
+      set_watchers
       debug("Started code reloading...") if @debug
       @watcher.run
     rescue => ex
@@ -40,17 +31,40 @@ module Abstractive
       raise
     end
 
+    def set_watchers
+      @root.each { |path|
+        Find.find( path ) { |file|
+          if !File.extname(file) == '.rb' and !File.directory? file
+            Find.prune
+          else
+            begin
+              if File.extname(file) == '.rb'
+                debug("Will reload: #{file}") if @debug
+                @watcher.watch(file, *@events) { reload(file) }
+              end
+            rescue => ex
+              exception(ex, "Code Reloading > Trouble setting watchers.")
+            end
+          end
+        }
+      }
+    end
+
     [:debug, :console, :exception].each { |m|
       define_method(m) { |*args|
-        if @logger and @logger.respond_to?(m)
-          @logger.send(m, *args)
-        else
-          puts *args
+        begin
+          if @logger and @logger.respond_to?(m)
+            @logger.send(m, *args)
+          else
+            puts "#{m}: ... #{args}"
+          end
+        rescue
+          puts "#{m}: ... #{args}"
         end
       }
     }
 
-    def reload!(file)
+    def reload(file)
       begin
         load(file)
         debug("Reloaded: #{file}") if @debug
@@ -58,18 +72,11 @@ module Abstractive
         exception(ex, "Code Reloading > Syntax error in #{file}")
       rescue LoadError => ex
         exception(ex, "Code Reloading > Missing file: #{file}")
-      rescue => ex
-        exception(ex, "Code Reloading > Problem reloading file: #{file}")
       end
-    end
-
-    def reload(file)
-      debug("Reloading: #{file}") if @debug
-      reload!(file)
-      @watcher.watch( file, :modify) { reload file }
+      @watcher.watch(file, *@events) { reload file } if @reschedule
       @on_reload.call(file) if @on_reload.is_a? Proc
     rescue => ex
-      exception(ex, "Trouble reloading file.")
+      exception(ex, "Trouble reloading file: #{file}")
       raise
     end
 
