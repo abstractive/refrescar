@@ -1,6 +1,6 @@
 Gem::Specification.new do |gem|
   gem.name        = "refrescar"
-  gem.version     = '0.0.9'
+  gem.version     = '0.0.9.pre0'
   gem.platform    = Gem::Platform::RUBY
   gem.summary     = "Code reloader for Ruby, on Linux."
   gem.description = "Code reloader, implemented using Celluloid and rb-inotify."
