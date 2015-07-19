@@ -7,18 +7,18 @@ module Abstractive
 
     include Celluloid
 
-    def initialize(options={}, &block)
+    def initialize(options={})
       @logger = options[:logger]
       options[:root] ||= Dir.pwd
       @root = Array[options[:root]]
-      @debug = options[:debug] || false
-      @announcing = options[:announcing] || false
-      @reschedule = options[:reschedule] || false
-      @on_reload = block
+      @debug = options.fetch(:debug, false)
+      @announcing = options.fetch(:announcing, true)
+      @reschedule = options.fetch(:reschedule, false)
+      @after_reload = options.fetch(:after_reload, false)
       @watcher = INotify::Notifier.new
       @events = [
         :close_write,
-        #de :modify  #de This seems to fire twice in certain cases.
+        #de :modify         #de This seems to fire twice in certain cases. Used :close_write instead.
       ]
       async.reloading
     end
@@ -69,16 +69,15 @@ module Abstractive
       begin
         load(file)
         console("Reloaded: #{file}") if @announcing
+      	@watcher.watch(file, *@events) { reload file } if @reschedule
+      	@after_reload.call(file) if @after_reload.is_a? Proc
       rescue SyntaxError => ex
         exception(ex, "Code Reloading > Syntax error in #{file}")
       rescue LoadError => ex
         exception(ex, "Code Reloading > Missing file: #{file}")
       end
-      @watcher.watch(file, *@events) { reload file } if @reschedule
-      @on_reload.call(file) if @on_reload.is_a? Proc
     rescue => ex
       exception(ex, "Trouble reloading file: #{file}")
-      raise
     end
 
   end
