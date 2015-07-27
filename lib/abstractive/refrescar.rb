@@ -29,7 +29,7 @@ class Abstractive::Refrescar < Abstractive::Actor
   end
 
   def reloading
-    set_watchers(@root)
+    @root.each { |root| set_watchers(root) }
     debug("Started code reloading...") if @debug
     @watcher.run
   rescue => ex
@@ -38,7 +38,8 @@ class Abstractive::Refrescar < Abstractive::Actor
   end
 
   def set_watchers(root)
-    Array[root].each { |path|
+    root.each { |path|
+      debug("Watching root: #{root}") if @debug
       Find.find( path ) { |file|
         if !File.extname(file) == '.rb' and !File.directory? file
           Find.prune
