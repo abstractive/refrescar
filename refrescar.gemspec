@@ -1,6 +1,6 @@
 Gem::Specification.new do |gem|
   gem.name        = "refrescar"
-  gem.version     = '0.0.9'
+  gem.version     = '0.2.0'
   gem.platform    = Gem::Platform::RUBY
   gem.summary     = "Code reloader for Ruby, on Linux."
   gem.description = "Code reloader, implemented using Celluloid and rb-inotify."
@@ -23,4 +23,5 @@ Gem::Specification.new do |gem|
   gem.require_path = "lib"
   gem.add_runtime_dependency 'celluloid', '>= 0.17.0'
   gem.add_runtime_dependency 'rb-inotify'
+  gem.add_runtime_dependency "abstractive"
 end
