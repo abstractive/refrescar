@@ -20,8 +20,16 @@ class Abstractive::Refrescar < Abstractive::Actor
     async.reloading
   end
 
+  def add(root, relative=nil)
+    if relative
+      root = File.expand_path(root, relative)
+    end
+    @root << root
+    set_watchers(root)
+  end
+
   def reloading
-    set_watchers
+    set_watchers(@root)
     debug("Started code reloading...") if @debug
     @watcher.run
   rescue => ex
@@ -29,8 +37,8 @@ class Abstractive::Refrescar < Abstractive::Actor
     raise
   end
 
-  def set_watchers
-    @root.each { |path|
+  def set_watchers(root)
+    Array[root].each { |path|
       Find.find( path ) { |file|
         if !File.extname(file) == '.rb' and !File.directory? file
           Find.prune
@@ -55,12 +63,12 @@ class Abstractive::Refrescar < Abstractive::Actor
     	@watcher.watch(file, *@events) { reload file } if @reschedule
     	@after_reload.call(file) if @after_reload.is_a? Proc
     rescue SyntaxError => ex
-      exception(ex, "Code Reloading > Syntax error in #{file}")
+      exception(ex, "Code Reloading > Syntax error in #{file}", console: false)
     rescue LoadError => ex
-      exception(ex, "Code Reloading > Missing file: #{file}")
+      exception(ex, "Code Reloading > Missing file: #{file}", console: false)
     end
   rescue => ex
-    exception(ex, "Trouble reloading file: #{file}")
+    exception(ex, "Trouble reloading file: #{file}", console: false)
   end
 
 end
