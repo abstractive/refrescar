@@ -5,6 +5,7 @@ require 'abstractive/actor'
 class Abstractive::Refrescar < Abstractive::Actor
 
   def initialize(options={})
+    @running = false
     @logger = options[:logger]
     options[:root] ||= Dir.pwd
     @root = Array[options[:root]]
@@ -17,24 +18,27 @@ class Abstractive::Refrescar < Abstractive::Actor
       :close_write,
       #de :modify         #de This seems to fire twice in certain cases. Used :close_write instead.
     ]
-    async.reloading
+    start unless options.fetch(:autostart, false)
   end
 
   def add(root, relative=nil)
-    if relative
-      root = File.expand_path(root, relative)
-    end
+    root = File.expand_path(root, relative) if relative
     @root << root
-    set_watchers(root)
+    set_watchers(root) if @running
   end
 
   def reloading
     @root.each { |root| set_watchers(root) }
     debug("Started code reloading...") if @debug
+    @running = true
     @watcher.run
   rescue => ex
     exception(ex, "Trouble running reloader.")
     raise
+  end
+
+  def start
+    async.reloading
   end
 
   def set_watchers(path)
