@@ -37,23 +37,21 @@ class Abstractive::Refrescar < Abstractive::Actor
     raise
   end
 
-  def set_watchers(root)
-    root.each { |path|
-      debug("Watching root: #{root}") if @debug
-      Find.find( path ) { |file|
-        if !File.extname(file) == '.rb' and !File.directory? file
-          Find.prune
-        else
-          begin
-            if File.extname(file) == '.rb'
-              debug("Will reload: #{file}") if @debug
-              @watcher.watch(file, *@events) { reload(file) }
-            end
-          rescue => ex
-            exception(ex, "Code Reloading > Trouble setting watchers.")
+  def set_watchers(path)
+    debug("Watching path: #{path}") if @debug
+    Find.find( path ) { |file|
+      if !File.extname(file) == '.rb' and !File.directory? file
+        Find.prune
+      else
+        begin
+          if File.extname(file) == '.rb'
+            debug("Will reload: #{file}") if @debug
+            @watcher.watch(file, *@events) { reload(file) }
           end
+        rescue => ex
+          exception(ex, "Code Reloading > Trouble setting watchers.")
         end
-      }
+      end
     }
   end
 
