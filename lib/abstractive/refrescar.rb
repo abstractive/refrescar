@@ -18,7 +18,7 @@ class Abstractive::Refrescar < Abstractive::Actor
       :close_write,
       #de :modify         #de This seems to fire twice in certain cases. Used :close_write instead.
     ]
-    start unless options.fetch(:autostart, false)
+    start if options.fetch(:autostart, true)
   end
 
   def add(root, relative=nil)
@@ -30,7 +30,6 @@ class Abstractive::Refrescar < Abstractive::Actor
   def reloading
     @root.each { |root| set_watchers(root) }
     debug("Started code reloading...") if @debug
-    @running = true
     @watcher.run
   rescue => ex
     exception(ex, "Trouble running reloader.")
@@ -39,6 +38,7 @@ class Abstractive::Refrescar < Abstractive::Actor
 
   def start
     async.reloading
+    @running = true
   end
 
   def set_watchers(path)
