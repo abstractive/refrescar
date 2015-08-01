@@ -22,9 +22,14 @@ class Abstractive::Refrescar < Abstractive::Actor
   end
 
   def add(root, relative=nil)
+    raise "Already running." if @running
     root = File.expand_path(root, relative) if relative
     @root << root
-    set_watchers(root) if @running
+    set_watchers(root)
+  end
+
+  def running?
+    @running === true
   end
 
   def reloading
